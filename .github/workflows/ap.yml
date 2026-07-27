@@ -136,11 +136,24 @@ jobs:
       id: package
       run: |
         cd xwrt
+
+        ./scripts/config --enable PACKAGE_kmod-wireguard
+        ./scripts/config --enable PACKAGE_wireguard-tools
+        ./scripts/config --enable PACKAGE_luci-proto-wireguard
+        ./scripts/config --enable PACKAGE_qrencode
+
         make defconfig
+
+        for p in kmod-wireguard wireguard-tools luci-proto-wireguard qrencode; do
+          grep -qx "CONFIG_PACKAGE_${p}=y" .config || {
+            echo "ERROR: CONFIG_PACKAGE_${p} was removed from .config"
+            exit 1
+          }
+        done
+
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-    - name: Compile the firmware
       id: compile
       run: |
         cd xwrt
