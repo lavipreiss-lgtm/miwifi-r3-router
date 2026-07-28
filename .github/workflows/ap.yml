@@ -131,22 +131,25 @@ jobs:
       env:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-
     - name: Download package
       id: package
       run: |
         cd xwrt
 
-        ./scripts/config --enable PACKAGE_kmod-wireguard
-        ./scripts/config --enable PACKAGE_wireguard-tools
-        ./scripts/config --enable PACKAGE_luci-proto-wireguard
-        ./scripts/config --enable PACKAGE_qrencode
+        sed -i -E '/^(# )?CONFIG_PACKAGE_(kmod-wireguard|wireguard-tools|luci-proto-wireguard|qrencode)(=| is not set)/d' .config
+
+        cat >> .config <<'EOF'
+        CONFIG_PACKAGE_kmod-wireguard=y
+        CONFIG_PACKAGE_wireguard-tools=y
+        CONFIG_PACKAGE_luci-proto-wireguard=y
+        CONFIG_PACKAGE_qrencode=y
+        EOF
 
         make defconfig
 
         for p in kmod-wireguard wireguard-tools luci-proto-wireguard qrencode; do
           grep -qx "CONFIG_PACKAGE_${p}=y" .config || {
-            echo "ERROR: CONFIG_PACKAGE_${p} was removed from .config"
+            echo "ERROR: CONFIG_PACKAGE_${p} is unavailable or was removed"
             exit 1
           }
         done
